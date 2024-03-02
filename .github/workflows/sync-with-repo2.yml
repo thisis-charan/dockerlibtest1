@@ -19,6 +19,8 @@ jobs:
           path: 'repo2'
 
       - name: Sync Python 3.10 Folder
+        env:
+          MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}
         run: |
           rsync -a --delete repo2/python/3.10/ repo1/python/3.10/
 
