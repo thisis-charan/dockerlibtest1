@@ -1,0 +1,9 @@
+FROM
+
+LABEL maintainer=""
+#Put your image name here
+ARG image_name=""
+ARG image_tag
+LABEL cpe_base_image=${image_name}:${image_tag}
+
+#additional commands
