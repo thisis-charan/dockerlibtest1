@@ -20,7 +20,7 @@ jobs:
 
       - name: Sync Python 3.10 Folder
         run: |
-          rsync -a --delete repo2/python3.10/ repo1/python3.10/
+          rsync -a --delete repo2/python/3.10/ repo1/python/3.10/
 
       - name: Commit and Push Changes to Repo1
         run: |
