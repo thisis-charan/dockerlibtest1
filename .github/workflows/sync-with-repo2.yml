@@ -1,0 +1,33 @@
+name: Sync Python 3.10 Folder with Repo2
+
+on:
+  schedule:
+    - cron: '* * * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo1
+        uses: actions/checkout@v2
+        with:
+          path: 'repo1'
+
+      - name: Checkout Repo2
+        uses: actions/checkout@v2
+        with:
+          repository: 'thisis-charan/dockerlibtest2'
+          path: 'repo2'
+
+      - name: Sync Python 3.10 Folder
+        run: |
+          rsync -a --delete repo2/python3.10/ repo1/python3.10/
+
+      - name: Commit and Push Changes to Repo1
+        run: |
+          cd repo1
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+          git add python3.10
+          git commit -m "Sync python3.10 folder with dockerlibtest2" || echo "No changes to commit"
+          git push
