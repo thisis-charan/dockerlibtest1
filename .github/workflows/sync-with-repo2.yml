@@ -25,6 +25,8 @@ jobs:
           rsync -a --delete repo2/python/3.10/ repo1/python/3.10/
 
       - name: Commit and Push Changes to Repo1
+        env:
+          MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}
         run: |
           cd repo1
           git config user.name 'GitHub Actions'
