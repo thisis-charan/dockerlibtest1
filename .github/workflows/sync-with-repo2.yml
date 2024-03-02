@@ -2,7 +2,7 @@ name: Sync Python 3.10 Folder with Repo2
 
 on:
   schedule:
-    - cron: '* * * * *'
+    - cron: '*/1 * * * *'
 
 jobs:
   sync:
