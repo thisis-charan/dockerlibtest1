@@ -27,6 +27,6 @@ jobs:
           cd repo1
           git config user.name 'GitHub Actions'
           git config user.email 'actions@github.com'
-          git add python3.10
+          git add python/3.10
           git commit -m "Sync python3.10 folder with dockerlibtest2" || echo "No changes to commit"
           git push
