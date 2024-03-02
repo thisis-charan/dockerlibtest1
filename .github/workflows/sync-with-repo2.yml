@@ -1,8 +1,7 @@
 name: Sync Python 3.10 Folder with Repo2
 
 on:
-  schedule:
-    - cron: '*/1 * * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
