@@ -23,12 +23,15 @@ jobs:
         with:
           repository: 'aws/aws-lambda-base-images'
           path: 'repo2'
-          ref: 'java11/x86_64'
+          ref: 'java11'
 
       - name: Check TAR files
         id: check_tar
         run: |
-          diff --brief repo1/lambda/java/11/*.tar repo2/*.tar > tar_diff.log
+          mkdir -p repo1_tar_temp repo2_tar_temp
+          cp repo1/lambda/java/11/*.tar repo1_tar_temp/
+          cp repo2/x86_64/*.tar repo2_tar_temp/
+          diff --brief repo1_tar_temp/ repo2_tar_temp/ > tar_diff.log
           if [ -s tar_diff.log ]; then
             echo "TAR_FILES_DIFFERENT=true" >> $GITHUB_ENV
           else
@@ -37,7 +40,7 @@ jobs:
       - name: Sync Java 11 Folder
         if: env.TAR_FILES_DIFFERENT == 'true'
         run: |
-          rsync -a --delete repo2/ repo1/lambda/java/11/
+          rsync -a --delete repo2/x86_64/ repo1/lambda/java/11/
 
       - name: Commit and Push Changes to Repo1
         if: env.TAR_FILES_DIFFERENT == 'true'
