@@ -25,17 +25,39 @@ jobs:
           path: 'repo2'
           ref: 'java11'
 
-      - name: Check TAR files
-        id: check_tar
+      - name: Check and Sync TAR.XZ files
         run: |
           mkdir -p repo1_tar_temp repo2_tar_temp
-          cp repo1/lambda/java/11/*.tar repo1_tar_temp/
-          cp repo2/x86_64/*.tar repo2_tar_temp/
-          diff --brief repo1_tar_temp/ repo2_tar_temp/ > tar_diff.log
-          if [ -s tar_diff.log ]; then
+          shopt -s nullglob # Ensure the pattern returns an empty array if no files match
+          repo1_tars=(repo1/lambda/java/11/*.tar.xz)
+          repo2_tars=(repo2/x86_64/*.tar.xz)
+          
+          # Copy .tar.xz files from repo1 to a temporary directory if they exist
+          if [ ${#repo1_tars[@]} -gt 0 ]; then
+            cp repo1/lambda/java/11/*.tar.xz repo1_tar_temp/
+          fi
+
+          # Copy .tar.xz files from repo2 to a temporary directory
+          if [ ${#repo2_tars[@]} -gt 0 ]; then
+            cp repo2/x86_64/*.tar.xz repo2_tar_temp/
+          fi
+
+          # If there are no .tar.xz files in repo1, copy from repo2 to repo1
+          if [ ${#repo1_tars[@]} -eq 0 ] && [ ${#repo2_tars[@]} -gt 0 ]; then
+            cp repo2/x86_64/*.tar.xz repo1/lambda/java/11/
             echo "TAR_FILES_DIFFERENT=true" >> $GITHUB_ENV
+          elif [ ${#repo1_tars[@]} -gt 0 ] && [ ${#repo2_tars[@]} -gt 0 ]; then
+            # Compare .tar.xz files between repo1 and repo2 if they exist in both
+            diff --brief repo1_tar_temp/ repo2_tar_temp/ > tar_diff.log
+            if [ -s tar_diff.log ]; then
+              echo "TAR_FILES_DIFFERENT=true" >> $GITHUB_ENV
+            else
+              echo "TAR_FILES_DIFFERENT=false" >> $GITHUB_ENV
+            fi
           else
+            # No .tar.xz files to compare, set to false
             echo "TAR_FILES_DIFFERENT=false" >> $GITHUB_ENV
+          fi
 
       - name: Sync Java 11 Folder
         if: env.TAR_FILES_DIFFERENT == 'true'
