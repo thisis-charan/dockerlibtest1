@@ -1,0 +1,52 @@
+name: Sync Java 11 Lambda Base Image Folder with AWS Base Images Repo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo1
+        uses: actions/checkout@v2
+        with:
+          path: 'repo1'
+          ref: main
+
+      - name: Create new branch 'auto-pull'
+        run: |
+          cd repo1
+          git checkout -b auto-pull
+
+      - name: Checkout Repo2
+        uses: actions/checkout@v2
+        with:
+          repository: 'aws/aws-lambda-base-images'
+          path: 'repo2'
+          ref: 'java11/x86_64'
+
+      - name: Check TAR files
+        id: check_tar
+        run: |
+          diff --brief repo1/lambda/java/11/*.tar repo2/*.tar > tar_diff.log
+          if [ -s tar_diff.log ]; then
+            echo "TAR_FILES_DIFFERENT=true" >> $GITHUB_ENV
+          else
+            echo "TAR_FILES_DIFFERENT=false" >> $GITHUB_ENV
+
+      - name: Sync Java 11 Folder
+        if: env.TAR_FILES_DIFFERENT == 'true'
+        run: |
+          rsync -a --delete repo2/ repo1/lambda/java/11/
+
+      - name: Commit and Push Changes to Repo1
+        if: env.TAR_FILES_DIFFERENT == 'true'
+        env:
+          MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}
+        run: |
+          cd repo1
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+          git add lambda/java/11
+          git commit -m "Sync Java 11 folder with AWS Lambda base images" || echo "No changes to commit"
+          git push --set-upstream https://${{ secrets.MY_GITHUB_PAT }}@github.com/spadala50/Test-auto-pull-docker-updates.git auto-pull
