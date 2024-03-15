@@ -23,7 +23,7 @@ jobs:
         with:
           repository: 'aws/aws-lambda-base-images'
           path: 'repo2'
-          ref: 'java11'
+          ref: 'tree/java11'
 
       - name: Check and Sync TAR.XZ files
         run: |
