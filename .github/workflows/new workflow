@@ -1,52 +1,76 @@
-name: Sync Java 11 Lambda Base Image Folder with AWS Base Images Repo
+name: Auto Update Lambda Images 
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+     - master
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+         - aws_image: 'java11'
+           local_dir: 'java/11'
+        # Add or uncomment other images as necessary
+
     steps:
-      - name: Checkout Repo1
-        uses: actions/checkout@v2
+      - name: Checkout dockerlibrary
+        uses: actions/checkout@v4.1.1
         with:
-          path: 'repo1'
-          ref: main
+          path: 'dockerlibrary'
+          ref: master
 
-      - name: Create new branch 'auto-pull'
+      - name: Create new branch with date and feature tag
+        id: create_branch
         run: |
-          cd repo1
-          git checkout -b auto-pull
-
-      - name: Checkout Repo2
-        uses: actions/checkout@v2
-        with:
+          cd dockerlibrary
+          branch_name=$(date -u "+feature-${{ matrix.aws_image }}/%Y-%m-%d-%H-%M-%S")
+          git checkout -b $branch_name
+          echo "branch_name=$branch_name" >> $GITHUB_ENV
+      
+      - name: Checkout officialrepo
+        uses: actions/checkout@v4.1.1
+        with: 
           repository: 'aws/aws-lambda-base-images'
-          path: 'repo2'
-          ref: 'java11/x86_64'
+          path: 'officialrepo'
+          ref: ${{ matrix.aws_image }}
 
-      - name: Check TAR files
-        id: check_tar
+      - name: List Directories and Output Environment Details
         run: |
-          diff --brief repo1/lambda/java/11/*.tar repo2/*.tar > tar_diff.log
-          if [ -s tar_diff.log ]; then
-            echo "TAR_FILES_DIFFERENT=true" >> $GITHUB_ENV
-          else
-            echo "TAR_FILES_DIFFERENT=false" >> $GITHUB_ENV
-
-      - name: Sync Java 11 Folder
-        if: env.TAR_FILES_DIFFERENT == 'true'
+          ls -all officialrepo
+          ls -all officialrepo/x86_64/
+          ls -all dockerlibrary/lambda/${{ matrix.local_dir }}/
+          pwd
+          cat /etc/os-release
+      
+      # Add other necessary steps here...
+      
+      - name: Read Pull Request Template
+        id: pr_template
         run: |
-          rsync -a --delete repo2/ repo1/lambda/java/11/
-
-      - name: Commit and Push Changes to Repo1
-        if: env.TAR_FILES_DIFFERENT == 'true'
-        env:
-          MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}
-        run: |
-          cd repo1
-          git config user.name 'GitHub Actions'
-          git config user.email 'actions@github.com'
-          git add lambda/java/11
-          git commit -m "Sync Java 11 folder with AWS Lambda base images" || echo "No changes to commit"
-          git push --set-upstream https://${{ secrets.MY_GITHUB_PAT }}@github.com/spadala50/Test-auto-pull-docker-updates.git auto-pull
+          template_content=$(cat .github/pull_request_template.md)
+          echo "::set-output name=body::$template_content"
+      
+      - name: Create Pull Request
+        if: env.CHANGES_DETECTED == 'true'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.MY_GITHUB_PAT }}
+          script: |
+            const title = "Update source for ${{ matrix.local_dir }} image";
+            const body = `${{ steps.pr_template.outputs.body }}`;
+            const head = process.env.branch_name;
+            const base = 'main';
+            const draft = false;
+            github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              head: head,
+              base: base,
+              draft: draft,
+            });
