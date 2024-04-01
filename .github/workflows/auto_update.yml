@@ -29,7 +29,7 @@ jobs:
           cd dockerlibrary
           branch_name=$(date -u "+feature-${{ matrix.aws_image }}/%Y-%m-%d-%H-%M-%S")
           git checkout -b $branch_name
-          echo "branch_name=$branch_name" >> $GITHUB_ENV
+          echo branch_name=$branch_name >> $GITHUB_ENV
       
       - name: Checkout officialrepo
         uses: actions/checkout@v4.1.1
