@@ -10,20 +10,21 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone Repositories
+      - name: Clone Java11 Branch from AWS Lambda Base Images Repository
         run: |
-          # Cloning AWS Lambda Base Images Repository
-          git clone "https://github.com/aws/aws-lambda-base-images.git" aws-lambda
-          # Cloning Docker Library Repository
-          git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
+          git clone --branch java11 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-java11
+          echo "Listing contents of AWS Lambda Java11 directory..."
+          ls -alh aws-lambda-java11/x86_64/
 
-      - name: List AWS Repository Contents
+      - name: Clone Python3.10 Branch from AWS Lambda Base Images Repository
         run: |
-          echo "Listing contents of AWS Lambda repository..."
-          ls -R aws-lambda/
-          echo "Listing specific directory..."
-          ls -alh aws-lambda/java11/x86_64/
-          ls -alh aws-lambda/python3.10/x86_64/
+          git clone --branch python3.10 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-python3.10
+          echo "Listing contents of AWS Lambda Python3.10 directory..."
+          ls -alh aws-lambda-python3.10/x86_64/
+
+      - name: Clone Docker Library Repository
+        run: |
+          git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
 
       - name: Sync Images and Commit Changes
         run: |
@@ -34,7 +35,6 @@ jobs:
             declare -A aws_files_hash
             declare -A docker_files_hash
 
-            echo "Checking files in AWS repo directory: $aws_repo_dir"
             if [ ! -d "$aws_repo_dir" ] || [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
               echo "No files found in $aws_repo_dir. Continuing with other directories..."
               return
@@ -78,8 +78,8 @@ jobs:
             fi
           }
 
-          sync_lambda_images "aws-lambda/java11/x86_64" "dockerlibrary/lambda/java/11"
-          sync_lambda_images "aws-lambda/python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
+          sync_lambda_images "aws-lambda-java11/x86_64" "dockerlibrary/lambda/java/11"
+          sync_lambda_images "aws-lambda-python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
 
           cd dockerlibrary
           if git status --porcelain; then
