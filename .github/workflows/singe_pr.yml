@@ -82,11 +82,11 @@ jobs:
 
           echo "Completed all syncs, checking for changes to commit..."
           cd dockerlibrary
-          git checkout -b master
+          git checkout -b master1
           if git status --porcelain; then
             git add .
             git commit -m "Updated AWS Lambda base images"
-            git push origin master  # Explicitly specifying the branch
+            git push origin master1  # Explicitly specifying the branch
             echo "Changes pushed"
           else
             echo "No changes to commit"
