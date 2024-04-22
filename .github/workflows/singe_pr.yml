@@ -13,7 +13,7 @@ jobs:
       - name: Clone Repositories
         run: |
           # Cloning AWS Lambda Base Images Repository
-          git clone --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda
+          git clone "https://github.com/aws/aws-lambda-base-images.git" aws-lambda
           # Cloning Docker Library Repository
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
 
