@@ -29,8 +29,8 @@ jobs:
 
             echo "Checking files in AWS repo directory: $aws_repo_dir"
             if [ ! -d "$aws_repo_dir" ] || [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
-              echo "No files found in $aws_repo_dir"
-              return 1  # Use return code to indicate no files found
+              echo "No files found in $aws_repo_dir. Continuing with other directories..."
+              return 0  # Change return code to 0 to indicate this is handled gracefully
             fi
 
             echo "Checking files in Docker repo directory: $docker_repo_dir"
@@ -86,4 +86,4 @@ jobs:
             git push
           else
             echo "No changes to commit"
-          fi
+        shell: bash
