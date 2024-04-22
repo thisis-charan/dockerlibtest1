@@ -30,7 +30,7 @@ jobs:
             echo "Checking files in AWS repo directory: $aws_repo_dir"
             if [ ! -d "$aws_repo_dir" ] || [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
               echo "No files found in $aws_repo_dir. Continuing with other directories..."
-              return 0  # Change return code to 0 to indicate this is handled gracefully
+              return  # Graceful exit if no files are found
             fi
 
             echo "Checking files in Docker repo directory: $docker_repo_dir"
@@ -67,7 +67,7 @@ jobs:
               fi
             done
 
-            if [ "$update_required" = false ]; then
+            if [ "$update_required" == false ]; then
               echo "No differences found, no update required."
             fi
           }
