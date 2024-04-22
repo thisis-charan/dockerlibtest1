@@ -78,7 +78,7 @@ jobs:
           }
 
           sync_lambda_images "aws-lambda-java11/x86_64" "dockerlibrary/lambda/java/11"
-          sync_lambda_images "aws-lambda-python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
+          sync_lambda_images "aws-lambda-python3.10/x86_64" "dockerlibrary/python/3.10"
 
           echo "Completed all syncs, checking for changes to commit..."
           cd dockerlibrary
