@@ -1,4 +1,4 @@
-name: Single Pull Request
+name: Update AWS Lambda Images
 
 on:
   workflow_dispatch:
@@ -10,90 +10,80 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout dockerlibrary
-        uses: actions/checkout@v4.1.1
-        with:
-          path: 'dockerlibrary'
-          ref: master
+      - name: Setup Environment
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
 
-      - name: Create a consolidated update branch
-        id: create_branch
+      - name: Clone AWS Lambda Base Images Repository
+        run: |
+          git clone --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda
+
+      - name: Clone Docker Library Repository
+        run: |
+          git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
+
+      - name: Sync Java 11 AWS Lambda Images to Docker Library
+        run: |
+          aws_repo_dir="aws-lambda/java11/x86_64"
+          docker_repo_dir="dockerlibrary/lambda/java/11"
+          sync_lambda_images "$aws_repo_dir" "$docker_repo_dir"
+
+      - name: Sync Python 3.10 AWS Lambda Images to Docker Library
+        run: |
+          aws_repo_dir="aws-lambda/python3.10/x86_64"
+          docker_repo_dir="dockerlibrary/lambda/python/3.10"
+          sync_lambda_images "$aws_repo_dir" "$docker_repo_dir"
+
+      - name: Commit and Push Updates if Needed
         run: |
           cd dockerlibrary
-          branch_name=$(date -u "+updates/%Y-%m-%d-%H-%M-%S")
-          git checkout -b $branch_name
-          echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
-          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
+          if git status --porcelain; then
+            git add .
+            git commit -m "Updated AWS Lambda base images"
+            git push
+          else
+            echo "No changes to commit"
 
-      - name: Update Images
+      - name: Cleanup
         run: |
-          git clone --depth 1 "https://github.com/aws/aws-lambda-base-images.git" officialrepo
-          for image_info in java11:java/11 python3.10:python/3.10; do
-            IFS=":" read aws_image local_dir <<< "$image_info"
-            ref=$aws_image
-            git -C officialrepo checkout $ref
-            
-            aws_repo_dir="officialrepo/x86_64"
-            docker_repo_dir="dockerlibrary/lambda/$local_dir"
+          rm -rf aws-lambda
+          rm -rf dockerlibrary
+
+# Helper function to avoid code duplication
+      - name: Define sync function
+        run: |
+          echo 'sync_lambda_images() {
+            aws_repo_dir=$1
+            docker_repo_dir=$2
             update_required=false
-            
+        
             declare -A aws_files_hash
             declare -A docker_files_hash
-            
+        
             for file in $aws_repo_dir/*.tar.xz; do
-              hash=$(sha256sum "$file" | awk '{print $1}')
+              hash=$(sha256sum "$file" | awk "{print $1}")
               aws_files_hash["$hash"]=$(basename "$file")
             done
-            
+        
             for file in $docker_repo_dir/*.tar.xz; do
-              hash=$(sha256sum "$file" | awk '{print $1}')
+              hash=$(sha256sum "$file" | awk "{print $1}")
               docker_files_hash["$hash"]=$(basename "$file")
             done
-            
+        
             for hash in "${!aws_files_hash[@]}"; do
               if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
                 update_required=true
-                echo "Differences detected for $aws_image, updating..."
+                echo "Differences detected, updating..."
                 rm -f $docker_repo_dir/*.tar.xz
                 for file in "${aws_files_hash[@]}"; do
                   cp "$aws_repo_dir/$file" "$docker_repo_dir/"
                 done
-                break
               fi
             done
-            
+        
             if [ "$update_required" = false ]; then
-              echo "No differences found for $aws_image, no update required."
+              echo "No differences found, no update required."
             fi
-          done
-
-      - name: Commit all changes
-        if: env.BRANCH_NAME
-        run: |
-          cd dockerlibrary
-          if git status --porcelain; then
-            git config user.name 'GitHub Actions'
-            git config user.email 'actions@github.com'
-            git add .
-            git commit -m "Update all AWS Lambda base images"
-            git push --set-upstream origin $BRANCH_NAME
-          fi
-
-      - name: Create a single pull request for all updates
-        if: env.BRANCH_NAME
-        uses: actions/github-script@v7.0.1
-        with:
-          github-token: ${{ secrets.MY_GITHUB_PAT }}
-          script: |
-            const title = "Update AWS Lambda base images";
-            const body = "This PR updates the AWS Lambda base images to the latest versions for Java, .NET, and Python.";
-            const head = `${{ env.BRANCH_NAME }}`;
-            const base = 'main';
-            github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              head: head,
-              base: base
-            });
+          }' >> $HOME/.bashrc
+        shell: bash
