@@ -1,10 +1,10 @@
-name: Single PR
+name: Single Pull Request
 
 on:
   workflow_dispatch:
   push:
     branches:
-     - master
+      - master
 
 jobs:
   sync:
@@ -23,23 +23,20 @@ jobs:
           branch_name=$(date -u "+updates/%Y-%m-%d-%H-%M-%S")
           git checkout -b $branch_name
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
-          echo branch_name=$branch_name >> $GITHUB_OUTPUT
-      
+          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
+
       - name: Update Images
-        uses: actions/checkout@v4.1.1
-        with: 
-          repository: 'aws/aws-lambda-base-images'
         run: |
+          git clone --depth 1 "https://github.com/aws/aws-lambda-base-images.git" officialrepo
           for image_info in java11:java/11 python3.10:python/3.10; do
             IFS=":" read aws_image local_dir <<< "$image_info"
-            path="officialrepo"
             ref=$aws_image
-            git clone --depth 1 --branch $ref "https://github.com/aws/aws-lambda-base-images.git" $path
-
-            aws_repo_dir="$path/x86_64"
+            git -C officialrepo checkout $ref
+            
+            aws_repo_dir="officialrepo/x86_64"
             docker_repo_dir="dockerlibrary/lambda/$local_dir"
             update_required=false
-          
+            
             declare -A aws_files_hash
             declare -A docker_files_hash
             
@@ -47,12 +44,12 @@ jobs:
               hash=$(sha256sum "$file" | awk '{print $1}')
               aws_files_hash["$hash"]=$(basename "$file")
             done
-          
+            
             for file in $docker_repo_dir/*.tar.xz; do
               hash=$(sha256sum "$file" | awk '{print $1}')
               docker_files_hash["$hash"]=$(basename "$file")
             done
-          
+            
             for hash in "${!aws_files_hash[@]}"; do
               if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
                 update_required=true
