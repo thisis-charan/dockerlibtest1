@@ -13,15 +13,20 @@ jobs:
       - name: Clone Specific Branches
         run: |
           git clone --branch java11 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-java11
+          echo "cloned java11"
           git clone --branch python3.10 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-python3.10
+          echo "cloned pyton3.10"
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
+          echo "cloned dockerlib"
 
       - name: Sync Images and Commit Changes
         run: |
           function sync_lambda_images() {
+            echo "entered function"
             local aws_repo_dir=$1
             local docker_repo_dir=$2
             local update_required=false
+            echo "updated update required"
             declare -A aws_files_hash
             declare -A docker_files_hash
 
@@ -69,7 +74,9 @@ jobs:
 
           # Sync files for Java and Python
           sync_lambda_images "aws-lambda-java11/x86_64" "dockerlibrary/lambda/java/11"
+          echo "1"
           sync_lambda_images "aws-lambda-python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
+          echo "2"
 
           # Commit and push changes if there are any
           cd dockerlibrary
