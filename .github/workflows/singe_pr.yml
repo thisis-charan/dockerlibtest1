@@ -1,11 +1,3 @@
-name: Update AWS Lambda Images
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - master
-
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -23,54 +15,28 @@ jobs:
         run: |
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
 
-      - name: Sync Java 11 AWS Lambda Images to Docker Library
+      - name: Sync Images and Commit Changes
         run: |
-          aws_repo_dir="aws-lambda/java11/x86_64"
-          docker_repo_dir="dockerlibrary/lambda/java/11"
-          sync_lambda_images "$aws_repo_dir" "$docker_repo_dir"
-
-      - name: Sync Python 3.10 AWS Lambda Images to Docker Library
-        run: |
-          aws_repo_dir="aws-lambda/python3.10/x86_64"
-          docker_repo_dir="dockerlibrary/lambda/python/3.10"
-          sync_lambda_images "$aws_repo_dir" "$docker_repo_dir"
-
-      - name: Commit and Push Updates if Needed
-        run: |
-          cd dockerlibrary
-          if git status --porcelain; then
-            git add .
-            git commit -m "Updated AWS Lambda base images"
-            git push
-          else
-            echo "No changes to commit"
-
-      - name: Cleanup
-        run: |
-          rm -rf aws-lambda
-          rm -rf dockerlibrary
-
-# Helper function to avoid code duplication
-      - name: Define sync function
-        run: |
-          echo 'sync_lambda_images() {
-            aws_repo_dir=$1
-            docker_repo_dir=$2
-            update_required=false
-        
+          function sync_lambda_images() {
+            local aws_repo_dir=$1
+            local docker_repo_dir=$2
+            local update_required=false
             declare -A aws_files_hash
             declare -A docker_files_hash
-        
+            
+            # Calculate hashes for AWS files
             for file in $aws_repo_dir/*.tar.xz; do
-              hash=$(sha256sum "$file" | awk "{print $1}")
+              hash=$(sha256sum "$file" | awk '{print $1}')
               aws_files_hash["$hash"]=$(basename "$file")
             done
-        
+
+            # Calculate hashes for Docker files
             for file in $docker_repo_dir/*.tar.xz; do
-              hash=$(sha256sum "$file" | awk "{print $1}")
+              hash=$(sha256sum "$file" | awk '{print $1}')
               docker_files_hash["$hash"]=$(basename "$file")
             done
-        
+
+            # Check for differences and update if necessary
             for hash in "${!aws_files_hash[@]}"; do
               if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
                 update_required=true
@@ -81,9 +47,24 @@ jobs:
                 done
               fi
             done
-        
+
             if [ "$update_required" = false ]; then
               echo "No differences found, no update required."
             fi
-          }' >> $HOME/.bashrc
+          }
+
+          # Call the function for Java
+          sync_lambda_images "aws-lambda/java11/x86_64" "dockerlibrary/lambda/java/11"
+
+          # Call the function for Python
+          sync_lambda_images "aws-lambda/python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
+
+          # Commit and push if changes were made
+          cd dockerlibrary
+          if git status --porcelain; then
+            git add .
+            git commit -m "Updated AWS Lambda base images"
+            git push
+          else
+            echo "No changes to commit"
         shell: bash
