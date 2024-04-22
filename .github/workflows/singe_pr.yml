@@ -5,42 +5,54 @@ on:
   push:
     branches:
       - master
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Environment
+      - name: Clone Repositories
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-      - name: Clone AWS Lambda Base Images Repository
-        run: |
+          # Cloning AWS Lambda Base Images Repository
           git clone --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda
-
-      - name: Clone Docker Library Repository
-        run: |
+          # Cloning Docker Library Repository
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
 
       - name: Sync Images and Commit Changes
         run: |
+          # Define sync function within the same script block
           function sync_lambda_images() {
             local aws_repo_dir=$1
             local docker_repo_dir=$2
             local update_required=false
             declare -A aws_files_hash
             declare -A docker_files_hash
-            
+
+            echo "Checking files in AWS repo directory: $aws_repo_dir"
+            if [ ! -d "$aws_repo_dir" ] || [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
+              echo "No files found in $aws_repo_dir"
+              return
+            fi
+
+            echo "Checking files in Docker repo directory: $docker_repo_dir"
+            if [ ! -d "$docker_repo_dir" ]; then
+              echo "Docker directory $docker_repo_dir not found, creating it..."
+              mkdir -p "$docker_repo_dir"
+            fi
+
             # Calculate hashes for AWS files
             for file in $aws_repo_dir/*.tar.xz; do
-              hash=$(sha256sum "$file" | awk '{print $1}')
-              aws_files_hash["$hash"]=$(basename "$file")
+              if [ -f "$file" ]; then
+                hash=$(sha256sum "$file" | awk '{print $1}')
+                aws_files_hash["$hash"]=$(basename "$file")
+              fi
             done
 
             # Calculate hashes for Docker files
             for file in $docker_repo_dir/*.tar.xz; do
-              hash=$(sha256sum "$file" | awk '{print $1}')
-              docker_files_hash["$hash"]=$(basename "$file")
+              if [ -f "$file" ]; then
+                hash=$(sha256sum "$file" | awk '{print $1}')
+                docker_files_hash["$hash"]=$(basename "$file")
+              fi
             done
 
             # Check for differences and update if necessary
