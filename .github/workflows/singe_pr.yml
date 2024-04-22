@@ -4,57 +4,50 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main  # Ensure this is your repo's default or active branch
+      - master
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Git Config
+      - name: Clone Specific Branches
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-      - name: Clone and Setup Repositories
-        run: |
+          set -e
           git clone --branch java11 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-java11
+          echo "Cloned java11 branch successfully"
           git clone --branch python3.10 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-python3.10
+          echo "Cloned python3.10 branch successfully"
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
+          echo "Cloned Docker library successfully"
 
       - name: Sync Images and Commit Changes
         run: |
-          set -e  # Stop on first error
-          cd dockerlibrary
-          # Check current branch, switch to 'master1' or ensure it's created
-          if git rev-parse --verify master1 > /dev/null 2>&1; then
-            git checkout master1
-          else
-            git checkout -b master1
-          fi
-
-          # Define the sync function
+          set -e
           function sync_lambda_images() {
             local aws_repo_dir=$1
             local docker_repo_dir=$2
-            declare -A aws_files_hash
-            declare -A docker_files_hash
-            local update_required=false
-
-            echo "Processing files in $aws_repo_dir..."
-            if [ ! -d "$aws_repo_dir" ] || [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
-              echo "No files to process in $aws_repo_dir."
-              return 0
+            echo "Starting sync for $aws_repo_dir"
+            
+            if [ ! -d "$aws_repo_dir" ]; then
+              echo "Directory $aws_repo_dir not found."
+              return 1
+            elif [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
+              echo "No .tar.xz files found in $aws_repo_dir."
+              return 1
             fi
 
             if [ ! -d "$docker_repo_dir" ]; then
+              echo "Docker directory $docker_repo_dir not found, creating..."
               mkdir -p "$docker_repo_dir"
-              echo "Created directory: $docker_repo_dir"
             fi
 
+            declare -A aws_files_hash
+            declare -A docker_files_hash
             for file in $aws_repo_dir/*.tar.xz; do
               if [ -f "$file" ]; then
                 local hash=$(sha256sum "$file" | awk '{print $1}')
                 aws_files_hash["$hash"]=$(basename "$file")
+                echo "Processed hash for $file"
               fi
             done
 
@@ -62,35 +55,35 @@ jobs:
               if [ -f "$file" ]; then
                 local hash=$(sha256sum "$file" | awk '{print $1}')
                 docker_files_hash["$hash"]=$(basename "$file")
+                echo "Processed hash for $file"
               fi
             done
 
+            local update_required=false
             for hash in "${!aws_files_hash[@]}"; do
               if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
-                echo "Updating files..."
+                echo "Difference found for hash $hash, updating..."
                 update_required=true
+                rm -f "$docker_repo_dir"/*.tar.xz
                 cp "$aws_repo_dir"/*.tar.xz "$docker_repo_dir/"
               fi
             done
 
-            if [ "$update_required" = true ]; then
-              echo "Updates applied for $docker_repo_dir"
+            echo "Completed sync for $aws_repo_dir"
+            if [ "$update_required" == false ]; then
+              echo "No differences found, no update required."
             else
-              echo "No updates necessary for $docker_repo_dir"
+              echo "Updates performed for $aws_repo_dir"
             fi
           }
 
-          # Perform sync operations
           sync_lambda_images "aws-lambda-java11/x86_64" "dockerlibrary/lambda/java/11"
           sync_lambda_images "aws-lambda-python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
 
-          # Commit changes
+          echo "Completed all syncs, checking for changes to commit..."
+          cd dockerlibrary
           if git status --porcelain; then
             git add .
-            git commit -m "Updated AWS Lambda base images on branch master1"
-            git push --set-upstream origin master1
-            echo "Changes have been pushed to master1"
-          else
-            echo "No changes to commit."
-
-          echo "All operations completed successfully."
+            git commit -m "Updated AWS Lambda base images"
+            git push
+            echo "Changes pushed"
