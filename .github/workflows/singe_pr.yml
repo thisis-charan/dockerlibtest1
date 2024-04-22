@@ -12,27 +12,24 @@ jobs:
     steps:
       - name: Clone Specific Branches
         run: |
+          set -e
           git clone --branch java11 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-java11
-          echo "Cloned java11 branch"
+          echo "Cloned java11 branch successfully"
           git clone --branch python3.10 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-python3.10
-          echo "Cloned python3.10 branch"
+          echo "Cloned python3.10 branch successfully"
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
-          echo "Cloned Docker library"
+          echo "Cloned Docker library successfully"
 
       - name: Sync Images and Commit Changes
         run: |
-          set -e  # Ensure the script stops on first error
+          set -e
           function sync_lambda_images() {
-            echo "Function start"
             local aws_repo_dir=$1
             local docker_repo_dir=$2
-            local update_required=false
-            declare -A aws_files_hash
-            declare -A docker_files_hash
-
-            echo "Checking files in AWS repo directory: $aws_repo_dir"
+            echo "Starting sync for $aws_repo_dir"
+            
             if [ ! -d "$aws_repo_dir" ]; then
-              echo "AWS directory $aws_repo_dir not found."
+              echo "Directory $aws_repo_dir not found."
               return 1
             elif [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
               echo "No .tar.xz files found in $aws_repo_dir."
@@ -40,15 +37,17 @@ jobs:
             fi
 
             if [ ! -d "$docker_repo_dir" ]; then
-              echo "Creating Docker directory $docker_repo_dir..."
+              echo "Docker directory $docker_repo_dir not found, creating..."
               mkdir -p "$docker_repo_dir"
             fi
 
+            declare -A aws_files_hash
+            declare -A docker_files_hash
             for file in $aws_repo_dir/*.tar.xz; do
               if [ -f "$file" ]; then
                 local hash=$(sha256sum "$file" | awk '{print $1}')
                 aws_files_hash["$hash"]=$(basename "$file")
-                echo "File $file processed"
+                echo "Processed hash for $file"
               fi
             done
 
@@ -56,38 +55,35 @@ jobs:
               if [ -f "$file" ]; then
                 local hash=$(sha256sum "$file" | awk '{print $1}')
                 docker_files_hash["$hash"]=$(basename "$file")
-                echo "File $file processed"
+                echo "Processed hash for $file"
               fi
             done
 
+            local update_required=false
             for hash in "${!aws_files_hash[@]}"; do
               if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
+                echo "Difference found for hash $hash, updating..."
                 update_required=true
-                echo "Differences detected, updating..."
                 rm -f "$docker_repo_dir"/*.tar.xz
                 cp "$aws_repo_dir"/*.tar.xz "$docker_repo_dir/"
               fi
             done
 
-            echo "Sync process completed"
-            if [ "$update_required" = false ]; then
+            echo "Completed sync for $aws_repo_dir"
+            if [ "$update_required" == false ]; then
               echo "No differences found, no update required."
             else
-              echo "Update performed"
+              echo "Updates performed for $aws_repo_dir"
             fi
           }
 
-          # Sync files for Java and Python
           sync_lambda_images "aws-lambda-java11/x86_64" "dockerlibrary/lambda/java/11"
           sync_lambda_images "aws-lambda-python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
 
-          # Commit and push changes if there are any
+          echo "Completed all syncs, checking for changes to commit..."
           cd dockerlibrary
           if git status --porcelain; then
             git add .
             git commit -m "Updated AWS Lambda base images"
             git push
-            echo "Changes pushed"
-          else
-            echo "No changes to commit"
-        shell: bash
+            echo "Changes pushed
