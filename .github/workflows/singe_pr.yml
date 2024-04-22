@@ -1,3 +1,10 @@
+name: Update AWS Lambda Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
 jobs:
   sync:
     runs-on: ubuntu-latest
