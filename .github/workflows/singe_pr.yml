@@ -17,9 +17,16 @@ jobs:
           # Cloning Docker Library Repository
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
 
+      - name: List AWS Repository Contents
+        run: |
+          echo "Listing contents of AWS Lambda repository..."
+          ls -R aws-lambda/
+          echo "Listing specific directory..."
+          ls -alh aws-lambda/java11/x86_64/
+          ls -alh aws-lambda/python3.10/x86_64/
+
       - name: Sync Images and Commit Changes
         run: |
-          # Define sync function within the same script block
           function sync_lambda_images() {
             local aws_repo_dir=$1
             local docker_repo_dir=$2
@@ -30,16 +37,17 @@ jobs:
             echo "Checking files in AWS repo directory: $aws_repo_dir"
             if [ ! -d "$aws_repo_dir" ] || [ -z "$(ls -A $aws_repo_dir/*.tar.xz 2>/dev/null)" ]; then
               echo "No files found in $aws_repo_dir. Continuing with other directories..."
-              return  # Graceful exit if no files are found
+              return
+            else
+              echo "Files found in $aws_repo_dir:"
+              ls $aws_repo_dir/*.tar.xz
             fi
 
-            echo "Checking files in Docker repo directory: $docker_repo_dir"
             if [ ! -d "$docker_repo_dir" ]; then
-              echo "Docker directory $docker_repo_dir not found, creating it..."
+              echo "Creating Docker directory $docker_repo_dir..."
               mkdir -p "$docker_repo_dir"
             fi
 
-            # Calculate hashes for AWS files
             for file in $aws_repo_dir/*.tar.xz; do
               if [ -f "$file" ]; then
                 hash=$(sha256sum "$file" | awk '{print $1}')
@@ -47,7 +55,6 @@ jobs:
               fi
             done
 
-            # Calculate hashes for Docker files
             for file in $docker_repo_dir/*.tar.xz; do
               if [ -f "$file" ]; then
                 hash=$(sha256sum "$file" | awk '{print $1}')
@@ -55,7 +62,6 @@ jobs:
               fi
             done
 
-            # Check for differences and update if necessary
             for hash in "${!aws_files_hash[@]}"; do
               if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
                 update_required=true
@@ -72,13 +78,9 @@ jobs:
             fi
           }
 
-          # Call the function for Java
           sync_lambda_images "aws-lambda/java11/x86_64" "dockerlibrary/lambda/java/11"
-
-          # Call the function for Python
           sync_lambda_images "aws-lambda/python3.10/x86_64" "dockerlibrary/lambda/python/3.10"
 
-          # Commit and push if changes were made
           cd dockerlibrary
           if git status --porcelain; then
             git add .
