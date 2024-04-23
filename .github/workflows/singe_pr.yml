@@ -20,16 +20,9 @@ jobs:
           git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
           echo "Cloned Docker library successfully"
 
-      - name: Configure Git Identity
-        run: |
-          cd dockerlibrary
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
       - name: Sync Images and Commit Changes
         run: |
           set -e
-          cd dockerlibrary
           function sync_lambda_images() {
             local aws_repo_dir=$1
             local docker_repo_dir=$2
@@ -51,6 +44,7 @@ jobs:
             declare -A aws_files_hash
             declare -A docker_files_hash
 
+            # Calculate hash for AWS files
             for file in $aws_repo_dir/*.tar.xz; do
               if [ -f "$file" ]; then
                 local hash=$(sha256sum "$file" | awk '{print $1}')
@@ -58,6 +52,7 @@ jobs:
               fi
             done
 
+            # Calculate hash for Docker files
             for file in $docker_repo_dir/*.tar.xz; do
               if [ -f "$file" ]; then
                 local hash=$(sha256sum "$file" | awk '{print $1}')
@@ -84,6 +79,7 @@ jobs:
           sync_lambda_images "aws-lambda-java11/x86_64" "dockerlibrary/lambda/java/11"
           sync_lambda_images "aws-lambda-python3.10/x86_64" "dockerlibrary/python/3.10"
 
+          cd dockerlibrary
           new_branch="feature/$(date +'%Y%m%d-%H%M%S')"
           git checkout -b "$new_branch"
           if git status --porcelain | grep -q '.'; then
@@ -93,3 +89,4 @@ jobs:
             echo "Changes pushed to $new_branch"
           else
             echo "No changes to commit."
+          fi
