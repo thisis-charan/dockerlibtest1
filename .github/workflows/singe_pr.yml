@@ -70,7 +70,7 @@ jobs:
             done
 
             echo "Completed sync for $aws_repo_dir"
-            if [ "$update_required" == false ]; then
+            if [ "$update_required" = false ]; then
               echo "No differences found, no update required."
             else
               echo "Updates performed for $aws_repo_dir"
@@ -82,8 +82,10 @@ jobs:
 
           echo "Completed all syncs, checking for changes to commit..."
           cd dockerlibrary
+          new_branch="feature/$(date +'%Y%m%d-%H%M%S')"
+          git checkout -b "$new_branch"
           if git status --porcelain; then
             git add .
             git commit -m "Updated AWS Lambda base images"
-            git push
-            echo "Changes pushed"
+            git push origin "$new_branch"
+            echo "Changes pushed to $new_branch"
