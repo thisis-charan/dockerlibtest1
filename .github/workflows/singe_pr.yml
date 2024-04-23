@@ -83,6 +83,9 @@ jobs:
           new_branch="feature/$(date +'%Y%m%d-%H%M%S')"
           git checkout -b "$new_branch"
           if git status --porcelain | grep -q '.'; then
+            echo "CHANGES_DETECTED=true" >> $GITHUB_ENV
+            git config user.name 'GitHub Actions'
+            git config user.email 'actions@github.com'
             git add .
             git commit -m "Updated AWS Lambda base images"
             git push origin "$new_branch"
