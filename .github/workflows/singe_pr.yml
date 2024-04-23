@@ -41,6 +41,9 @@ jobs:
             if [ ! -d "$docker_repo_dir" ]; then
               echo "Docker directory $docker_repo_dir not found, creating..."
               mkdir -p "$docker_repo_dir"
+            else
+              echo "Removing existing .tar.xz files from $docker_repo_dir"
+              rm -f $docker_repo_dir/*.tar.xz
             fi
 
             declare -A aws_files_hash
@@ -54,18 +57,10 @@ jobs:
               fi
             done
 
-            # Calculate hash for Docker files
-            for file in $docker_repo_dir/*.tar.xz; do
-              if [ -f "$file" ]; then
-                local hash=$(sha256sum "$file" | awk '{print $1}')
-                docker_files_hash["$hash"]=$(basename "$file")
-              fi
-            done
-
             local update_required=false
             for hash in "${!aws_files_hash[@]}"; do
               if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
-                echo "Difference found for hash $hash, updating..."
+                echo "Copying new file ${aws_files_hash[$hash]} to $docker_repo_dir"
                 update_required=true
                 cp "$aws_repo_dir/${aws_files_hash[$hash]}" "$docker_repo_dir/"
               fi
