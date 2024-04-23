@@ -78,6 +78,7 @@ jobs:
 
           cd dockerlibrary
           new_branch="feature/$(date +'%Y%m%d-%H%M%S')"
+          echo "::set-output name=branch_name::$new_branch"  # Output the branch name
           git checkout -b "$new_branch"
           if git status --porcelain | grep -q '.'; then
             echo "CHANGES_DETECTED=true" >> $GITHUB_ENV
@@ -91,3 +92,23 @@ jobs:
           else
             echo "No changes to commit."
           fi
+      - name: Create Pull Request
+        if: env.CHANGES_DETECTED == 'true'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.MY_GITHUB_PAT }}
+          script: |
+            const title = "Update AWS Lambda base images";
+            const body = "This PR updates the AWS Lambda base images to the latest version.";
+            const head = `${{ steps.create_branch.outputs.branch_name }}`; // The branch name you've pushed to
+            const base = 'main'; // The branch you want to merge the changes into
+            const draft = false; // Set to true if you want the PR to be created as a draft
+            github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              head: head,
+              base: base,
+              draft: draft,
+            });    
