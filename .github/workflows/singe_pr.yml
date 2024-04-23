@@ -17,7 +17,7 @@ jobs:
           echo "Cloned java11 branch successfully"
           git clone --branch python3.10 --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-python3.10
           echo "Cloned python3.10 branch successfully"
-          git clone --branch main "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
+          git clone --branch master "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
           echo "Cloned Docker library successfully"
 
       - name: Sync Images and Commit Changes
