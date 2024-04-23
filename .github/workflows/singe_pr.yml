@@ -21,6 +21,8 @@ jobs:
           echo "Cloned Docker library successfully"
 
       - name: Sync Images and Commit Changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_PAT }}
         run: |
           set -e
           function sync_lambda_images() {
@@ -86,6 +88,7 @@ jobs:
             echo "CHANGES_DETECTED=true" >> $GITHUB_ENV
             git config user.name 'GitHub Actions'
             git config user.email 'actions@github.com'
+            git remote set-url origin https://x-access-token:${MY_GITHUB_PAT}@github.com/thisis-charan/dockerlibtest1.git
             git add .
             git commit -m "Updated AWS Lambda base images"
             git push origin "$new_branch"
