@@ -145,7 +145,7 @@ jobs:
           MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}  
 
   finalize:
-    needs: sync
+    needs: [sync, prepare]
     runs-on: ubuntu-latest
     steps:
       - name: Create Pull Request
