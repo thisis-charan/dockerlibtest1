@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           path: 'dockerlibrary'
-          ref: ${{ steps.create_branch.outputs.branch_name }}
+          ref: ${{ needs.prepare.outputs.branch_name }}
 
       - name: List branches in dockerlibrary repository
         run: |
