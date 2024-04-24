@@ -27,10 +27,12 @@ jobs:
           echo "branch_name=$branch_name" >> $GITHUB_ENV
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
 
-      - name: List branches in dockerlibrary repository
+      - name: Push branch to remote repository
         run: |
           cd dockerlibrary
-          git branch -a    
+          git push origin ${{ steps.create_branch.outputs.branch_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
 
   sync:
     needs: prepare
@@ -58,7 +60,7 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           path: 'dockerlibrary'
-          ref: master
+          ref: ${{ steps.create_branch.outputs.branch_name }}
 
       - name: List branches in dockerlibrary repository
         run: |
