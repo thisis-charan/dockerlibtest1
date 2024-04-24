@@ -128,6 +128,8 @@ jobs:
           git add lambda/${{ matrix.local_dir }}/
           git commit -m "Update source for ${{ matrix.local_dir }} image" || echo "No changes to commit for ${{ matrix.local_dir }}"
           git push origin ${{ needs.prepare.outputs.branch_name }}
+        env:
+          MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}  
 
   finalize:
     needs: sync
