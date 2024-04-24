@@ -27,6 +27,11 @@ jobs:
           echo "branch_name=$branch_name" >> $GITHUB_ENV
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
 
+      - name: List branches in dockerlibrary repository
+        run: |
+          cd dockerlibrary
+          git branch -a    
+
   sync:
     needs: prepare
     runs-on: ubuntu-latest
@@ -47,7 +52,12 @@ jobs:
         # Add or uncomment other images as necessary
       max-parallel: 1  # Limit parallel execution of jobs
 
-    steps:      
+    steps:
+      - name: List branches in dockerlibrary repository
+        run: |
+          cd dockerlibrary
+          git branch -a
+          
       - name: Checkout dockerlibrary (Feature Branch)
         uses: actions/checkout@v4.1.1
         with:
