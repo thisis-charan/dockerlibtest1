@@ -1,4 +1,4 @@
-name: Update AWS Lambda Images
+name: single matrix
 
 on:
   workflow_dispatch:
