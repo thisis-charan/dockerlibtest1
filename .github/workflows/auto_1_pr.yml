@@ -19,6 +19,10 @@ jobs:
             local_dir: 'dotnet/6'
           - aws_image: 'nodejs16.x'
             local_dir: 'nodejs/16'
+          - aws_image: 'python3.10'
+            local_dir: 'python/3.10'
+          - aws_image: 'python3.11'
+            local_dir: 'python/3.11'  
         # Add or uncomment other images as necessary
       max-parallel: 1  # Limit parallel execution of jobs
 
