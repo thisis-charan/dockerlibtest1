@@ -48,6 +48,12 @@ jobs:
       max-parallel: 1  # Limit parallel execution of jobs
 
     steps:      
+      - name: Checkout dockerlibrary (Feature Branch)
+        uses: actions/checkout@v4.1.1
+        with:
+          path: 'dockerlibrary'
+          ref: ${{ needs.prepare.outputs.branch_name }}
+          
       - name: Checkout officialrepo
         uses: actions/checkout@v4.1.1
         with: 
@@ -133,7 +139,7 @@ jobs:
           github-token: ${{ secrets.MY_GITHUB_PAT }}
           script: |
             const branch = ${{ needs.prepare.outputs.branch_name }};
-            const base = 'master';
+            const base = 'master';  # Ensure this is the correct base branch
             let prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
