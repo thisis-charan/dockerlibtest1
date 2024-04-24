@@ -42,6 +42,7 @@ jobs:
           echo "Copied new .tar.xz files to $docker_repo_dir"
 
       - name: Create and push new branch
+        id: create_branch
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
           cd dockerlibrary
