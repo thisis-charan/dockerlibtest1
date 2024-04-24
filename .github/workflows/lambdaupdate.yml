@@ -1,0 +1,153 @@
+name: complete code for update
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.create_branch.outputs.branch_name }}
+    steps:
+      - name: Checkout dockerlibrary
+        uses: actions/checkout@v4.1.1
+        with:
+          path: 'dockerlibrary'
+          ref: master
+
+      - name: Create new branch with date and feature tag
+        id: create_branch
+        run: |
+          cd dockerlibrary
+          branch_name=$(date -u "+feature-lambdaAutoUpdate-%Y-%m-%d-%H-%M-%S")
+          git checkout -b $branch_name
+          echo "branch_name=$branch_name" >> $GITHUB_ENV
+          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
+
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - aws_image: 'java11'
+            local_dir: 'java/11'
+          - aws_image: 'dotnet6'
+            local_dir: 'dotnet/6'
+          - aws_image: 'nodejs16.x'
+            local_dir: 'nodejs/16'
+          - aws_image: 'python3.10'
+            local_dir: 'python/3.10'
+          - aws_image: 'python3.11'
+            local_dir: 'python/3.11'  
+        # Add or uncomment other images as necessary
+      max-parallel: 1  # Limit parallel execution of jobs
+
+    steps:      
+      - name: Checkout officialrepo
+        uses: actions/checkout@v4.1.1
+        with: 
+          repository: 'aws/aws-lambda-base-images'
+          path: 'officialrepo'
+          ref: ${{ matrix.aws_image }}
+
+      - name: List Directories and Output Environment Details
+        run: |
+          ls -all officialrepo
+          ls -all officialrepo/x86_64/
+          ls -all dockerlibrary/lambda/${{ matrix.local_dir }}/
+          pwd
+               
+      - name: Synchronize Based on Content Difference
+        run: |
+          aws_repo_dir="officialrepo/x86_64"
+          docker_repo_dir="dockerlibrary/lambda/${{ matrix.local_dir }}/"
+          update_required=false
+        
+          declare -A aws_files_hash
+          declare -A docker_files_hash
+          
+          for file in $aws_repo_dir/*.tar.xz; do
+            hash=$(sha256sum "$file" | awk '{print $1}')
+            aws_files_hash["$hash"]=$(basename "$file")
+          done
+        
+          for file in $docker_repo_dir/*.tar.xz; do
+            hash=$(sha256sum "$file" | awk '{print $1}')
+            docker_files_hash["$hash"]=$(basename "$file")
+          done
+        
+          for hash in "${!aws_files_hash[@]}"; do
+            if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
+              update_required=true
+              break
+            fi
+          done
+        
+          if [ "$update_required" = true ]; then
+            echo "Differences detected, updating docker repo..."
+            rm -f $docker_repo_dir*.tar.xz
+            for file in "${aws_files_hash[@]}"; do
+              cp "$aws_repo_dir/$file" "$docker_repo_dir/"
+            done
+          else
+            echo "No differences found, no update required."
+          fi
+
+      - name: Update Dockerfile with current .tar.xz files
+        run: |
+          docker_repo_dir="dockerlibrary/lambda/${{ matrix.local_dir }}/"
+          cd $docker_repo_dir
+          
+          csplit Dockerfile /ENV\ LANG=en_US.UTF-8/ {*}
+          sed -i '/ADD .*\.tar\.xz \//d' xx00
+          
+          echo "" > new_adds.txt
+          for tar_file in *.tar.xz; do
+            echo "ADD $tar_file /" >> new_adds.txt
+          done
+          
+          cat xx00 new_adds.txt xx01 > Dockerfile
+          rm xx00 xx01 new_adds.txt
+
+      - name: Push changes to the new branch
+        run: |
+          cd dockerlibrary
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+          git add lambda/${{ matrix.local_dir }}/
+          git commit -m "Update source for ${{ matrix.local_dir }} image" || echo "No changes to commit for ${{ matrix.local_dir }}"
+          git push origin ${{ needs.prepare.outputs.branch_name }}
+
+  finalize:
+    needs: sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Pull Request if not exists
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.MY_GITHUB_PAT }}
+          script: |
+            const branch = ${{ needs.prepare.outputs.branch_name }};
+            const base = 'master';
+            let prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${branch}`
+            });
+            if (prs.data.length === 0) {
+              const title = "Update AWS Lambda base images";
+              const body = "This PR updates the AWS Lambda base images to the latest version.";
+              github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                head: branch,
+                base: base
+              });
+            }
