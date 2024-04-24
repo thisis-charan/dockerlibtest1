@@ -1,4 +1,4 @@
-name: Auto Update Lambda Images
+name: Update in 1 pr
 
 on:
   workflow_dispatch:
