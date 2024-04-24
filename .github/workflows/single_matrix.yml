@@ -43,7 +43,6 @@ jobs:
 
       - name: Create and push new branch
         id: create_branch
-        if: ${{ github.ref == 'refs/heads/master' }}
         run: |
           cd dockerlibrary
           new_branch="feature/$(date +'%Y%m%d-%H%M%S')"
