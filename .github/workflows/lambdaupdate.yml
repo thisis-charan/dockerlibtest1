@@ -53,17 +53,18 @@ jobs:
       max-parallel: 1  # Limit parallel execution of jobs
 
     steps:
-      - name: List branches in dockerlibrary repository
-        run: |
-          cd dockerlibrary
-          git branch -a
-          
+      
       - name: Checkout dockerlibrary (Feature Branch)
         uses: actions/checkout@v4.1.1
         with:
           path: 'dockerlibrary'
-          ref: ${{ needs.prepare.outputs.branch_name }}
-          
+          ref: master
+
+      - name: List branches in dockerlibrary repository
+        run: |
+          cd dockerlibrary
+          git branch -a
+                      
       - name: Checkout officialrepo
         uses: actions/checkout@v4.1.1
         with: 
