@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           path: 'dockerlibrary'
-          ref: master
+          ref: ${{ needs.prepare.outputs.branch_name }}
           
       - name: Checkout officialrepo
         uses: actions/checkout@v4.1.1
