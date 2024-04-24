@@ -148,28 +148,23 @@ jobs:
     needs: sync
     runs-on: ubuntu-latest
     steps:
-      - name: Create Pull Request if not exists
+      - name: Create Pull Request
+        if: env.CHANGES_DETECTED == 'true'
         uses: actions/github-script@v7.0.1
         with:
           github-token: ${{ secrets.MY_GITHUB_PAT }}
           script: |
-            const branch = ${{ needs.prepare.outputs.branch_name }};
-            const base = 'master';  # Ensure this is the correct base branch
-            let prs = await github.rest.pulls.list({
+            const title = "Update AWS Lambda base images";
+            const body = "This PR updates the AWS Lambda base images to the latest version.";
+            const head = `${{ needs.create_branch.outputs.branch_name }}`; // The branch name you've pushed to
+            const base = 'main'; // The branch you want to merge the changes into
+            const draft = false; // Set to true if you want the PR to be created as a draft
+            github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: 'open',
-              head: `${context.repo.owner}:${branch}`
+              title: title,
+              body: body,
+              head: head,
+              base: base,
+              draft: draft,
             });
-            if (prs.data.length === 0) {
-              const title = "Update AWS Lambda base images";
-              const body = "This PR updates the AWS Lambda base images to the latest version.";
-              github.rest.pulls.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                head: branch,
-                base: base
-              });
-            }
