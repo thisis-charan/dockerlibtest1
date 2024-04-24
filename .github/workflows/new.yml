@@ -44,7 +44,7 @@ jobs:
           cp $aws_repo_dir/*.tar.xz $docker_repo_dir/
 
   create_branch_and_pr:
-    needs: sync
+    needs: [sync, prepare_updates]  # Ensure this job waits for both the sync and prepare_updates jobs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Docker Library Repository
@@ -55,7 +55,7 @@ jobs:
 
       - name: Create and push new branch
         run: |
-          new_branch="feature/${{ needs.prepare_updates.outputs.timestamp }}"
+          new_branch="feature/${{ needs.prepare_updates.outputs.timestamp }}"  # Use the timestamp output from prepare_updates job
           git checkout -b "$new_branch"
           git config user.name 'GitHub Actions'
           git config user.email 'actions@github.com'
@@ -70,7 +70,7 @@ jobs:
           script: |
             const title = "Update AWS Lambda base images";
             const body = "This PR updates the AWS Lambda base images to the latest versions across multiple environments.";
-            const head = "${{ needs.prepare_updates.outputs.timestamp }}";
+            const head = "feature/${{ needs.prepare_updates.outputs.timestamp }}";  # Use the formatted branch name
             const base = 'main';
             github.rest.pulls.create({
               owner: context.repo.owner,
