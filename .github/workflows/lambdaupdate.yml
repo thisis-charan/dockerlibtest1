@@ -28,6 +28,7 @@ jobs:
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
 
   sync:
+    needs: prepare
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
