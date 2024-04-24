@@ -62,7 +62,7 @@ jobs:
           script: |
             const title = "Update AWS Lambda base images";
             const body = "This PR updates the AWS Lambda base images to the latest versions across multiple environments.";
-            const head = "${{ steps.create_and_push_new_branch.outputs.branch_name }}";
+            const head = "${{ steps.create_branch.outputs.branch_name }}";
             const base = 'main';
             const draft = false;
             github.rest.pulls.create({
