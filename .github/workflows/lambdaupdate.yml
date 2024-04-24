@@ -156,7 +156,7 @@ jobs:
           script: |
             const title = "Update AWS Lambda base images";
             const body = "This PR updates the AWS Lambda base images to the latest version.";
-            const head = `${{ needs.create_branch.outputs.branch_name }}`; // The branch name you've pushed to
+            const head = `${{ needs.prepare.outputs.branch_name }}`; // The branch name you've pushed to
             const base = 'main'; // The branch you want to merge the changes into
             const draft = false; // Set to true if you want the PR to be created as a draft
             github.rest.pulls.create({
