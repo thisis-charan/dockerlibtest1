@@ -1,0 +1,82 @@
+name: Single Matrix with Unified Branch
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  prepare_updates:
+    runs-on: ubuntu-latest
+    outputs:
+      timestamp: ${{ steps.set_timestamp.outputs.time }}
+    steps:
+      - name: Set Timestamp for Branch Name
+        id: set_timestamp
+        run: echo "::set-output name=time::$(date +'%Y%m%d-%H%M%S')"
+
+  sync:
+    needs: prepare_updates
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - aws_branch: 'java11'
+            local_dir: 'lambda/java/11'
+          - aws_branch: 'python3.10'
+            local_dir: 'lambda/python/3.10'
+          # Add more configurations as needed
+
+    steps:
+      - name: Clone AWS Lambda Base Image Repository
+        run: git clone --branch ${{ matrix.aws_branch }} --depth 1 "https://github.com/aws/aws-lambda-base-images.git" aws-lambda-${{ matrix.aws_branch }}
+
+      - name: Clone Docker Library
+        run: git clone "https://github.com/thisis-charan/dockerlibtest1.git" dockerlibrary
+
+      - name: Sync Images
+        run: |
+          aws_repo_dir="aws-lambda-${{ matrix.aws_branch }}/x86_64"
+          docker_repo_dir="dockerlibrary/${{ matrix.local_dir }}"
+          mkdir -p "$docker_repo_dir"
+          rm -f $docker_repo_dir/*.tar.xz
+          cp $aws_repo_dir/*.tar.xz $docker_repo_dir/
+
+  create_branch_and_pr:
+    needs: sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Docker Library Repository
+        uses: actions/checkout@v2
+        with:
+          repository: 'thisis-charan/dockerlibtest1'
+          token: ${{ secrets.MY_GITHUB_PAT }}
+
+      - name: Create and push new branch
+        run: |
+          new_branch="feature/${{ needs.prepare_updates.outputs.timestamp }}"
+          git checkout -b "$new_branch"
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+          git add .
+          git commit -m "Updated AWS Lambda base images"
+          git push --set-upstream origin "$new_branch"
+
+      - name: Create Pull Request
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.MY_GITHUB_PAT }}
+          script: |
+            const title = "Update AWS Lambda base images";
+            const body = "This PR updates the AWS Lambda base images to the latest versions across multiple environments.";
+            const head = "${{ needs.prepare_updates.outputs.timestamp }}";
+            const base = 'main';
+            github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              head: head,
+              base: base,
+            });
