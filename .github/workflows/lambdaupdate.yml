@@ -143,20 +143,18 @@ jobs:
           MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}  
           
   display_commits:
+    needs: [Create_Branch]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout the newly created branch
         uses: actions/checkout@v4.1.1
         with:
-          fetch-depth: 0  # Ensures all branches and tags are fetched
+          ref: ${{ needs.Create_Branch.outputs.branch_name }}
 
-      - name: List all branches and their latest commit messages
+      - name: List commits in the created branch
         run: |
-          git fetch --all
-          echo "List of branches and their latest commit messages:"
-          git branch -r | grep -v '\->' | while read remote; do
-            echo "$remote -> $(git log -1 --pretty=format:'%s' $remote)"
-          done
+          echo "Commits made to the branch ${{ needs.Create_Branch.outputs.branch_name }}:"
+          git log --oneline
           
   Check_For_Updates:
     needs: [Replace_Files]
