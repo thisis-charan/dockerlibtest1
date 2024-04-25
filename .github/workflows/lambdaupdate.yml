@@ -156,7 +156,7 @@ jobs:
             const pullRequestFilePath = path.join(process.env.GITHUB_WORKSPACE, 'PULL_REQUEST_TEMPLATE.md');                  
             const body = fs.readFileSync(pullRequestFilePath, 'utf8');
             const title = "Update source for ${{ matrix.local_dir }} image";
-            const head = `${{ steps.Create_Branch.outputs.branch_name }}`; // The branch name you've pushed to
+            const head = `${{ needs.Create_Branch.outputs.branch_name }}`; // The branch name you've pushed to
             const base = 'main'; // The branch you want to merge the changes into
             const draft = false; // Set to true if you want the PR to be created as a draft
             github.rest.pulls.create({
