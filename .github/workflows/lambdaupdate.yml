@@ -37,8 +37,6 @@ jobs:
   Replace_Files:
     needs: Create_Branch
     runs-on: ubuntu-latest
-    outputs:
-      update_made_${{ matrix.aws_image }}: ${{ steps.sync.outputs.update_made }}
     strategy:
       fail-fast: false
       matrix:
