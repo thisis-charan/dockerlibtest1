@@ -146,6 +146,16 @@ jobs:
     needs: [Replace_Files, Create_Branch]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout dockerlibrary
+        uses: actions/checkout@v4.1.1
+        with:
+          path: 'dockerlibrary'
+          ref: master
+
+      - name: Push branch to remote repository
+        run: |
+          cd dockerlibrary
+
       - name: Create Pull Request
         uses: actions/github-script@v7.0.1
         with:
@@ -153,9 +163,9 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            const pullRequestFilePath = path.join(process.env.GITHUB_WORKSPACE, 'PULL_REQUEST_TEMPLATE.md');                  
+            const pullRequestFilePath = path.join(process.env.GITHUB_WORKSPACE, 'dockerlibrary', 'PULL_REQUEST_TEMPLATE.md');                  
             const body = fs.readFileSync(pullRequestFilePath, 'utf8');
-            const title = "Update source for ${{ matrix.local_dir }} image";
+            const title = "Update source for lambda images";
             const head = `${{ needs.Create_Branch.outputs.branch_name }}`; // The branch name you've pushed to
             const base = 'main'; // The branch you want to merge the changes into
             const draft = false; // Set to true if you want the PR to be created as a draft
