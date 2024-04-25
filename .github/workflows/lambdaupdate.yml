@@ -104,6 +104,7 @@ jobs:
           for hash in "${!aws_files_hash[@]}"; do
             if [[ ! ${docker_files_hash["$hash"]+_} ]]; then
               update_required=true
+              echo "update_required=true" >> $GITHUB_ENV
               break
             fi
           done
