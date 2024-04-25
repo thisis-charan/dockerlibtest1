@@ -1,4 +1,4 @@
-name: Auto 1 pr
+name: Auto 1 pr test
 
 on:
   workflow_dispatch:
