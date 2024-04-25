@@ -154,11 +154,12 @@ jobs:
         id: check_updates
         run: |
           update_required=false
-          for image in ['java11', 'java17', 'dotnet6', 'nodejs16.x', 'python3.8', 'python3.9', 'python3.10', 'python3.11', 'python3.12']
+          {% for image in ['java11', 'java17', 'dotnet6', 'nodejs16.x', 'python3.8', 'python3.9', 'python3.10', 'python3.11', 'python3.12'] %}
           if [ "${{ needs.Replace_Files.outputs.update_made_${{ image }} }}" == "true" ]; then
             update_required=true
             break
-          fi          
+          fi
+          {% endfor %}
           echo "update_required=$update_required" >> $GITHUB_ENV
           echo "::set-output name=update_required::$update_required"
 
