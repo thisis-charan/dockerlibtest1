@@ -119,6 +119,7 @@ jobs:
           fi
 
       - name: Update Dockerfile with current .tar.xz files
+        if: env.update_required == 'true'
         run: |
           docker_repo_dir="dockerlibrary/lambda/${{ matrix.local_dir }}/"
           cd $docker_repo_dir          
@@ -171,6 +172,16 @@ jobs:
     if: needs.Check_For_Updates.outputs.updates_made == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout dockerlibrary
+        uses: actions/checkout@v4.1.1
+        with:
+          path: 'dockerlibrary'
+          ref: ${{ needs.Create_Branch.outputs.branch_name }}
+
+      - name: Push branch to remote repository
+        run: |
+          cd dockerlibrary
+          
       - name: Create Pull Request
         uses: actions/github-script@v7.0.1
         with:
