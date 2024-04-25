@@ -144,31 +144,32 @@ jobs:
         env:
           MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}  
   
-  Aggregate_Updates:
-    needs: Replace_Files
+  Check_For_Updates:
+    needs: [Replace_Files]
     runs-on: ubuntu-latest
     outputs:
-      update_required: ${{ steps.check_updates.outputs.update_required }}
+      updates_made: ${{ steps.count_commits.outputs.updates_made }}
     steps:
-      - name: Check if any updates were made
-        id: check_updates
+      - name: Checkout Repository
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ needs.Create_Branch.outputs.branch_name }}
+      
+      - name: Count Commits
+        id: count_commits
         run: |
-          update_required=false
-          {% for image in ['java11', 'java17', 'dotnet6', 'nodejs16.x', 'python3.8', 'python3.9', 'python3.10', 'python3.11', 'python3.12'] %}
-          if [ "${{ needs.Replace_Files.outputs.update_made_${{ image }} }}" == "true" ]; then
-            update_required=true
-            break
+          commit_count=$(git rev-list --count HEAD)
+          echo "Number of commits in the branch: $commit_count"
+          if [ "$commit_count" -gt 1 ]; then  # Assuming the first commit is the branch creation
+            echo "::set-output name=updates_made::true"
+          else
+            echo "::set-output name=updates_made::false"
           fi
-          {% endfor %}
-          echo "update_required=$update_required" >> $GITHUB_ENV
-          echo "::set-output name=update_required::$update_required"
 
-
-
-
+  
   Generate_PR:
-    needs: [Replace_Files, Create_Branch, Aggregate_Updates]
-    if: needs.Aggregate_Updates.outputs.update_required == 'true'
+    needs: [Replace_Files, Create_Branch, Check_For_Updates]
+    if: needs.Check_For_Updates.outputs.updates_made == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Create Pull Request
