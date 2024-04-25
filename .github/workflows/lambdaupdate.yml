@@ -1,4 +1,4 @@
-name: complete code for update
+name: Auto Update Lambda Images
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       - master
 
 jobs:
-  prepare:
+  Create_Branch:
     runs-on: ubuntu-latest
     outputs:
       branch_name: ${{ steps.create_branch.outputs.branch_name }}
@@ -22,7 +22,7 @@ jobs:
         id: create_branch
         run: |
           cd dockerlibrary
-          branch_name=$(date -u "+feature-lambdaAutoUpdate-%Y-%m-%d-%H-%M-%S")
+          branch_name=$(date -u "+feature/lambdaAutoUpdate-%Y%m%d-%H%M%S")
           git checkout -b $branch_name
           echo "branch_name=$branch_name" >> $GITHUB_ENV
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
@@ -32,10 +32,10 @@ jobs:
           cd dockerlibrary
           git push origin ${{ steps.create_branch.outputs.branch_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_PAT }}    
 
-  sync:
-    needs: prepare
+  Replace_Files:
+    needs: Create_Branch
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -43,47 +43,48 @@ jobs:
         include:
           - aws_image: 'java11'
             local_dir: 'java/11'
+          - aws_image: 'java17'
+            local_dir: 'java/17'  
           - aws_image: 'dotnet6'
             local_dir: 'dotnet/6'
           - aws_image: 'nodejs16.x'
             local_dir: 'nodejs/16'
+          - aws_image: 'python3.8'
+            local_dir: 'python/3.8'
+          - aws_image: 'python3.9'
+            local_dir: 'python/3.9'  
           - aws_image: 'python3.10'
             local_dir: 'python/3.10'
           - aws_image: 'python3.11'
-            local_dir: 'python/3.11'  
-        # Add or uncomment other images as necessary
+            local_dir: 'python/3.11'
+          - aws_image: 'python3.12'
+            local_dir: 'python/3.12' 
       max-parallel: 1  # Limit parallel execution of jobs
 
-    steps:
-      
+    steps:      
       - name: Checkout dockerlibrary (Feature Branch)
         uses: actions/checkout@v4.1.1
         with:
           path: 'dockerlibrary'
-          ref: ${{ needs.prepare.outputs.branch_name }}
-
-      - name: List branches in dockerlibrary repository
-        run: |
-          cd dockerlibrary
-          git branch -a
-                      
-      - name: Checkout officialrepo
+          ref: ${{ needs.Create_Branch.outputs.branch_name }}
+                           
+      - name: Checkout aws_repo
         uses: actions/checkout@v4.1.1
         with: 
           repository: 'aws/aws-lambda-base-images'
-          path: 'officialrepo'
+          path: 'aws_repo'
           ref: ${{ matrix.aws_image }}
 
       - name: List Directories and Output Environment Details
         run: |
-          ls -all officialrepo
-          ls -all officialrepo/x86_64/
+          ls -all aws_repo
+          ls -all aws_repo/x86_64/
           ls -all dockerlibrary/lambda/${{ matrix.local_dir }}/
           pwd
                
       - name: Synchronize Based on Content Difference
         run: |
-          aws_repo_dir="officialrepo/x86_64"
+          aws_repo_dir="aws_repo/x86_64"
           docker_repo_dir="dockerlibrary/lambda/${{ matrix.local_dir }}/"
           update_required=false
         
@@ -108,7 +109,7 @@ jobs:
           done
         
           if [ "$update_required" = true ]; then
-            echo "Differences detected, updating docker repo..."
+            echo "Differences detected, updating dockerlibrary repo..."
             rm -f $docker_repo_dir*.tar.xz
             for file in "${aws_files_hash[@]}"; do
               cp "$aws_repo_dir/$file" "$docker_repo_dir/"
@@ -120,16 +121,13 @@ jobs:
       - name: Update Dockerfile with current .tar.xz files
         run: |
           docker_repo_dir="dockerlibrary/lambda/${{ matrix.local_dir }}/"
-          cd $docker_repo_dir
-          
+          cd $docker_repo_dir          
           csplit Dockerfile /ENV\ LANG=en_US.UTF-8/ {*}
-          sed -i '/ADD .*\.tar\.xz \//d' xx00
-          
+          sed -i '/ADD .*\.tar\.xz \//d' xx00          
           echo "" > new_adds.txt
           for tar_file in *.tar.xz; do
             echo "ADD $tar_file /" >> new_adds.txt
-          done
-          
+          done          
           cat xx00 new_adds.txt xx01 > Dockerfile
           rm xx00 xx01 new_adds.txt
 
@@ -140,23 +138,25 @@ jobs:
           git config user.email 'actions@github.com'
           git add lambda/${{ matrix.local_dir }}/
           git commit -m "Update source for ${{ matrix.local_dir }} image" || echo "No changes to commit for ${{ matrix.local_dir }}"
-          git push origin ${{ needs.prepare.outputs.branch_name }}
+          git push origin ${{ needs.Create_Branch.outputs.branch_name }}
         env:
           MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}  
 
-  finalize:
-    needs: [sync, prepare]
+  Generate_PR:
+    needs: [Replace_Files, Create_Branch]
     runs-on: ubuntu-latest
     steps:
       - name: Create Pull Request
-    #    if: env.CHANGES_DETECTED == 'true'
         uses: actions/github-script@v7.0.1
         with:
           github-token: ${{ secrets.MY_GITHUB_PAT }}
           script: |
-            const title = "Update AWS Lambda base images";
-            const body = "This PR updates the AWS Lambda base images to the latest version.";
-            const head = `${{ needs.prepare.outputs.branch_name }}`; // The branch name you've pushed to
+            const fs = require('fs');
+            const path = require('path');
+            const pullRequestFilePath = path.join(process.env.GITHUB_WORKSPACE, 'dockerlibrary', 'PULL_REQUEST_TEMPLATE.md');                  
+            const body = fs.readFileSync(pullRequestFilePath, 'utf8');
+            const title = "Update source for ${{ matrix.local_dir }} image";
+            const head = `${{ steps.Create_Branch.outputs.branch_name }}`; // The branch name you've pushed to
             const base = 'main'; // The branch you want to merge the changes into
             const draft = false; // Set to true if you want the PR to be created as a draft
             github.rest.pulls.create({
@@ -168,3 +168,4 @@ jobs:
               base: base,
               draft: draft,
             });
+            
