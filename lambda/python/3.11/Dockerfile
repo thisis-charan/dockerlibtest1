@@ -1,12 +1,13 @@
 FROM scratch
 
-ADD 0fe4077db319f96a395e49a9708c6bd3052d805c9a39054d824e0d2ce01039f3.tar.xz /
-ADD 3bd71806f8aea66ec0fb849c413e6923d6c69c7ee38403ce1dd42281351e0857.tar.xz /
-ADD 53166686a8e2cf46e18184fed9c5e2c0342de63fa80e5ba84d52c1f19264e099.tar.xz /
-ADD b17bd0a724d5b30abf80b865dd6cb140f74fb48a8aa7beb8e70a4b48fcbff657.tar.xz /
-ADD bc17f57d2df1ad6cf6ac3af4de407d9e6a39b2e25027be60239ef740d86e5268.tar.xz /
-ADD dcbc2fee61d27bbbe5e7a0d7668b970b83b248e459a635282d41e3f8162fade5.tar.xz /
 
+
+ADD 40ab0d9abb64a557dfd6f2f08a3e41f16a7b30472efd7ce86bc9ebf9174be968.tar.xz /
+ADD 45919fb6227ce1c0e3cbb073f7e687728004c0fe93b21c997e11e64a165b1c0c.tar.xz /
+ADD 5ab574df2adaf5adcb2aa92a5de46995e56794618d4376dff872de8806ed6d5f.tar.xz /
+ADD 860b6c2dc8c03f5f92d176e3b706e48a28db205be2495a72ffa5b6c918c6b34b.tar.xz /
+ADD c58438548dbcb87f5513b0f22d223c6bf472aabc16cd4f498d4cb2287239d1f6.tar.xz /
+ADD d1a790d399056542302d7584c23a6e149193c3ef7d2731e84cc8a1ad1b059905.tar.xz /
 ENV LANG=en_US.UTF-8
 ENV TZ=:/etc/localtime
 ENV PATH=/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin
