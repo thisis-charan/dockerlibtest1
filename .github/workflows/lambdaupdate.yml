@@ -144,32 +144,10 @@ jobs:
         env:
           MY_GITHUB_PAT: ${{ secrets.MY_GITHUB_PAT }}        
            
-  Check_For_Updates:
-    needs: [Replace_Files]
-    runs-on: ubuntu-latest
-    outputs:
-      updates_made: ${{ steps.count_commits.outputs.updates_made }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4.1.1
-        with:
-          ref: ${{ needs.Create_Branch.outputs.branch_name }}
-          fetch-depth: 0
-      
-      - name: Count Commits
-        id: count_commits
-        run: |
-          commit_count=$(git rev-list --count HEAD)
-          echo "Number of commits in the branch: $commit_count"
-          if [ "$commit_count" -gt 1 ]; then  # Assuming the first commit is the branch creation
-            echo "::set-output name=updates_made::true"
-          else
-            echo "::set-output name=updates_made::false"
-          fi
 
   
   Generate_PR:
-    needs: [Replace_Files, Create_Branch, Check_For_Updates]
+    needs: [Replace_Files, Create_Branch]
     if: needs.Check_For_Updates.outputs.updates_made == 'true'
     runs-on: ubuntu-latest
     steps:
