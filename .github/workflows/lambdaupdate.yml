@@ -148,7 +148,6 @@ jobs:
   
   Generate_PR:
     needs: [Replace_Files, Create_Branch]
-    if: needs.Check_For_Updates.outputs.updates_made == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout dockerlibrary
