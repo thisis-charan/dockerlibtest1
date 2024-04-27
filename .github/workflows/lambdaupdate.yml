@@ -167,7 +167,7 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            const pullRequestFilePath = path.join(process.env.GITHUB_WORKSPACE, 'PULL_REQUEST_TEMPLATE.md');                  
+            const pullRequestFilePath = path.join(process.env.GITHUB_WORKSPACE, 'dockerlibrary', 'PULL_REQUEST_TEMPLATE.md');                  
             const body = fs.readFileSync(pullRequestFilePath, 'utf8');
             const title = "Update source for ${{ matrix.local_dir }} image";
             const head = `${{ needs.Create_Branch.outputs.branch_name }}`; // The branch name you've pushed to
