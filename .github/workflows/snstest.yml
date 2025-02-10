@@ -21,9 +21,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::<your-account-id>:role/SnsEmailNotifyTest
+          role-to-assume: arn:aws:iam::390844772055:role/SnsEmailNotifyTest
           aws-region: us-east-1
 
       # Optional: Subscribe the provided email to the SNS topic.
@@ -41,7 +41,7 @@ jobs:
         run: |
           echo "Publishing message to SNS topic..."
           aws sns publish \
-            --topic-arn arn:aws:sns:us-east-1::<your-account-id>:EmailNotifyTest \
+            --topic-arn arn:aws:sns:us-east-1:390844772055:EmailNotifyTest \
             --subject "GitHub Actions Notification" \
             --message "This is a notification from GitHub Actions. If you have not already confirmed your subscription, please check your inbox (${
             { github.event.inputs.email }}) for the confirmation email from AWS SNS."
