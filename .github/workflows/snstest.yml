@@ -1,0 +1,47 @@
+name: SNS Email Notification
+
+# Trigger manually and pass an email address as input.
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'Email address to send notification'
+        required: true
+        default: 'example@example.com'
+
+jobs:
+  send-notification:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write    # Required for OIDC-based AWS credentials
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::<your-account-id>:role/SnsEmailNotifyTest
+          aws-region: us-east-1
+
+      # Optional: Subscribe the provided email to the SNS topic.
+      # If the email is not yet subscribed (or pending confirmation), this call will
+      # trigger a confirmation email to the recipient.
+      - name: Subscribe Email to SNS Topic (Optional)
+        run: |
+          echo "Subscribing ${{ github.event.inputs.email }} to SNS topic..."
+          aws sns subscribe \
+            --topic-arn arn:aws:sns:us-east-1:390844772055:EmailNotifyTest \
+            --protocol email \
+            --notification-endpoint "${{ github.event.inputs.email }}"
+
+      - name: Publish Notification Message to SNS Topic
+        run: |
+          echo "Publishing message to SNS topic..."
+          aws sns publish \
+            --topic-arn arn:aws:sns:us-east-1::<your-account-id>:EmailNotifyTest \
+            --subject "GitHub Actions Notification" \
+            --message "This is a notification from GitHub Actions. If you have not already confirmed your subscription, please check your inbox (${
+            { github.event.inputs.email }}) for the confirmation email from AWS SNS."
