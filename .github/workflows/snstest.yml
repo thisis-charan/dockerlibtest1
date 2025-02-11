@@ -43,5 +43,5 @@ jobs:
           aws sns publish \
             --topic-arn arn:aws:sns:us-east-1:390844772055:EmailNotifyTest \
             --subject "GitHub Actions Notification" \
-            --message "This is a notification from GitHub Actions." \
+            --message "This is a notification from GitHub Actions "'"${{ github.event.inputs.email }}"'"." \
             --message-attributes '{"targetEmail": {"DataType": "String", "StringValue": "'"${{ github.event.inputs.email }}"'"}}'
