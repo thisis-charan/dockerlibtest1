@@ -5,30 +5,51 @@ def normalize_key(key: str) -> str:
     """
     Convert dashes to underscores for consistent key comparison.
     """
-    return key.replace("-", "_")
+    return key.replace("-", "_").lower()
 
 def update_data(target: dict, source: dict):
     """
     Recursively updates the target dictionary with values from the source
     for keys that already exist in target.
-    The comparison is done using normalized keys (dashes replaced with underscores).
+    
+    - Keys are compared in a normalized form (dashes replaced with underscores, lowercased).
+    - A custom mapping is used for known synonyms.
+      For example: "nonprod" in source will update "nprd" in target and 
+                   "prod" in source will update "prd" in target.
     """
-    # Create a mapping of normalized keys to original keys in the target dictionary.
+    # Custom mapping for known synonyms
+    custom_mapping = {
+        "nonprod": "nprd",
+        "prod": "prd"
+    }
+    
+    # Create a mapping of normalized keys to the actual keys in the target.
     norm_target_map = {normalize_key(k): k for k in target.keys()}
     
     for source_key, source_value in source.items():
         norm_source_key = normalize_key(source_key)
+        
+        # Try to find the key directly in the target.
         if norm_source_key in norm_target_map:
             target_key = norm_target_map[norm_source_key]
-            target_value = target[target_key]
-            # If both values are dictionaries, update recursively.
-            if isinstance(target_value, dict) and isinstance(source_value, dict):
-                update_data(target_value, source_value)
+        # If not found, check if a custom mapping exists.
+        elif norm_source_key in custom_mapping:
+            mapped_key = custom_mapping[norm_source_key]
+            if mapped_key in norm_target_map:
+                target_key = norm_target_map[mapped_key]
             else:
-                target[target_key] = source_value
+                continue  # Skip if no matching key in target.
+        else:
+            continue  # Skip keys that don't match.
+
+        target_value = target[target_key]
+        if isinstance(target_value, dict) and isinstance(source_value, dict):
+            update_data(target_value, source_value)
+        else:
+            target[target_key] = source_value
 
 def main():
-    # Hard-coded file paths
+    # Hard-coded file paths (adjust as needed)
     file1_path = r"C:\Users\Sai Charan\OneDrive\Desktop\test\ci.yml"
     file2_path = r"C:\Users\Sai Charan\OneDrive\Desktop\test\cicd.yml"
     output_path = r"C:\Users\Sai Charan\OneDrive\Desktop\test\cicdnew.yml"
