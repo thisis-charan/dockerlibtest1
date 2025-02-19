@@ -1,0 +1,19 @@
+name: "Update YAML in file2 Repo"
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  update-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Update YAML Composite Action
+        uses: your-org/your-composite-action-repo/.github/actions/update-yaml@v1
+        with:
+          file1-repo: "owner/file1-repo"         # repo with file1.yml
+          file1-path: "file1.yml"                # path to file1 in file1 repo
+          file2-repo: "owner/file2-repo"           # repo with file2.yml; if empty, uses current repo
+          file2-path: "file2.yml"                # path to file2 in file2 repo
+          # output-path: "file2.yml"             # optional; defaults to file2-path if omitted
