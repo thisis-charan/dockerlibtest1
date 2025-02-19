@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 from ruamel.yaml import YAML
 
 def update_data(target, source):
@@ -16,15 +15,10 @@ def update_data(target, source):
                 target[key] = source_value
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--file1', required=True, help='Path to file1 YAML file')
-    parser.add_argument('--file2', required=True, help='Path to file2 YAML file')
-    parser.add_argument('--output', required=False, help='Path for the output file (defaults to file2)', default=None)
-    args = parser.parse_args()
-
-    file1_path = args.file1
-    file2_path = args.file2
-    output_path = args.output if args.output else file2_path
+    # Hard-coded file paths
+    file1_path = r"C:\Users\Sai Charan\OneDrive\Desktop\test\ci.yml"
+    file2_path = r"C:\Users\Sai Charan\OneDrive\Desktop\test\cicd.yml"
+    output_path = r"C:\Users\Sai Charan\OneDrive\Desktop\test\cicdnew.yml"
 
     yaml = YAML()
     yaml.indent(mapping=2, sequence=4, offset=2)
