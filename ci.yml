@@ -15,30 +15,33 @@ cicd:
     secret_id: "secret456"
   environments:
     dev:
-      cluster: "dev-cluster-001"
-      aws_region: "us-west-2"
-      role_to_assume: "arn:aws:iam::111222333444:role/DevDeployRole"
-      image:
-        name: "my-app"
-        tag: "dev-2025.02.18"
-      vault:
-        role: "dev-vault-role"
-        secret_path: "secret/data/dev"
-      notifications:
-        slack: "#dev-alerts"
-        email: "dev-team@example.com"
+      kubernetes:
+        cluster: "dev-cluster-001"
+        aws_region: "us-west-2"
+        role_to_assume: "arn:aws:iam::111222333444:role/DevDeployRole"
+        image:
+          name: "my-app"
+          tag: "dev-2025.02.18"
+        vault:
+          role: "dev-vault-role"
+          secret_path: "secret/data/dev"
+        notifications:
+          slack: "#dev-alerts"
+          email: "dev-team@example.com"
     nprd:
-      cluster: "nprd-cluster-002"
-      aws_region: "us-east-1"
-      role_to_assume: "arn:aws:iam::111222333444:role/NprdDeployRole"
-      vault:
-        role: "nprd-vault-role"
-        secret_path: "secret/data/nprd"
-      notifications:
-        slack: "#nprd-alerts"
-        email: "nprd-team@example.com"
+      kubernetes:
+        cluster: "nprd-cluster-002"
+        aws_region: "us-east-1"
+        role_to_assume: "arn:aws:iam::111222333444:role/NprdDeployRole"
+        vault:
+          role: "nprd-vault-role"
+          secret_path: "secret/data/nprd"
+        notifications:
+          slack: "#nprd-alerts"
+          email: "nprd-team@example.com"
     prd:
-      cluster: "prd-cluster-003"
-      aws_region: "us-east-1"
-      role_to_assume: "arn:aws:iam::111222333444:role/ProdDeployRole"
+      kubernetes:
+        cluster: "prd-cluster-003"
+        aws_region: "us-east-1"
+        role_to_assume: "arn:aws:iam::111222333444:role/ProdDeployRole"
       
